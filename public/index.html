@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Email System</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+        }
+
+        .box {
+            background: white;
+            color: black;
+            padding: 25px;
+            border-radius: 12px;
+            width: 450px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        input, textarea {
+            width: 100%;
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            width: 100%;
+            margin-top: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .send { background: #2a5298; color: white; }
+        .tamper { background: red; color: white; }
+        .insecure { background: black; color: white; }
+
+        #output {
+            margin-top: 15px;
+            font-size: 13px;
+            background: #f7f7f7;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .section {
+            margin-top: 10px;
+            padding: 10px;
+            background: #eef2ff;
+            border-radius: 6px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .section pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 12px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .verified {
+            color: green;
+            font-weight: bold;
+        }
+
+        .tamperedText {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+    <h2>🔐 Secure Email System</h2>
+
+    <input id="from" placeholder="From (User A)">
+    <input id="to" placeholder="To (User B)">
+    <textarea id="msg" placeholder="Enter message"></textarea>
+
+    <button class="send" onclick="send(false)">Send Secure Email</button>
+    <button class="tamper" onclick="send(true)">Tamper Message</button>
+    <button class="insecure" onclick="sendInsecure()">Send WITHOUT Security</button>
+
+    <div id="output"></div>
+</div>
+
+<script>
+
+async function send(tamper = false) {
+
+    const message = document.getElementById("msg").value;
+    const from = document.getElementById("from").value;
+    const to = document.getElementById("to").value;
+
+    const res1 = await fetch("/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, from, to })
+    });
+
+    const data = await res1.json();
+    data.tamper = tamper;
+
+    const res2 = await fetch("/receive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    const result = await res2.json();
+
+    document.getElementById("output").innerHTML =
+        "<div class='section'><b>📧 Sender:</b> " + from + "<br>" +
+        "<b>📨 Receiver:</b> " + to + "</div>" +
+
+        "<div class='section'><b>🔒 Encrypted Message:</b><pre>" +
+        data.encryptedMessage + "</pre></div>" +
+
+        "<div class='section'><b>🔑 Encrypted AES Key (RSA):</b><pre>" +
+        data.encryptedKey + "</pre></div>" +
+
+        "<div class='section'><b>✍️ Digital Signature:</b><pre>" +
+        data.signature + "</pre></div>" +
+
+        "<div class='section'><b>🔓 Decrypted Message:</b><br>" +
+        result.message + "</div>" +
+
+        "<div class='section'><b>📊 Status:</b><br>" +
+        (result.status.includes("Verified")
+            ? "<span class='verified'>Verified ✅</span>"
+            : "<span class='tamperedText'>Tampered ❌</span>")
+        + "</div>";
+}
+
+function sendInsecure() {
+
+    const message = document.getElementById("msg").value;
+    const from = document.getElementById("from").value;
+    const to = document.getElementById("to").value;
+
+    document.getElementById("output").innerHTML =
+        "<div class='section'><b>📧 Sender:</b> " + from + "<br>" +
+        "<b>📨 Receiver:</b> " + to + "</div>" +
+
+        "<div class='section'><b>📨 Plain Message:</b><br>" +
+        message + "</div>" +
+
+        "<div class='section tamperedText'>❌ No Encryption | ❌ Not Secure</div>";
+}
+
+</script>
+
+</body>
+</html>
